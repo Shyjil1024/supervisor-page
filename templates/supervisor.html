@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Supervisor Dashboard{% endblock %}
+
+{% block content %}
+<div class="client-list">
+  {% for client in clients %}
+  <div class="client-bar" data-client-id="{{ client._id }}">
+    <div class="client-header">
+      <div class="client-info">
+        <span class="client-name">{{ client.name }}</span>
+        <div class="client-details hidden">
+          <a href="https://www.google.com/maps?q={{ client.address }}" 
+             target="_blank" 
+             class="address-link">
+            {{ client.address }}
+          </a>
+        </div>
+      </div>
+      <div class="controls-container">
+        {% if client.assigned_supplier %}
+          <div class="assignment-info">
+            <button class="assign-btn" disabled>Assigned</button>
+            <span class="assigned-supplier">Assigned to: {{ client.assigned_supplier }}</span>
+          </div>
+        {% else %}
+        <div class="assignment-info">
+          {% if client.assigned_supplier %}
+              <button class="assign-btn btn-disabled" id="assign-btn-{{ client._id }}" disabled>Assigned</button>
+              <span class="assigned-supplier">Assigned to: {{ client.assigned_supplier }}</span>
+          {% else %}
+              <button class="assign-btn" id="assign-btn-{{ client._id }}" onclick="showAssignModal('{{ client._id }}')">Assign</button>
+              <span class="assigned-supplier" style="display: none;">Assigned to: </span>
+          {% endif %}
+      </div>
+      
+        {% endif %}
+        <div class="menu-container">
+          <button class="menu-btn" onclick="toggleMenu(this)">⋮</button>
+          <div class="menu-content hidden">
+            <a href="#" onclick="showEditModal('{{ client._id }}', '{{ client.name }}', '{{ client.address }}')">Edit Client</a>
+            <a href="#" onclick="deleteClient('{{ client._id }}')">Delete Client</a>
+            <a href="#" onclick="showOrder('{{ client._id }}')">Show Order</a>
+            <a href="#" onclick="deleteOrder('{{ client._id }}')">Delete Order</a>
+          </div>
+        </div>        
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<button id="add-client-btn" class="add-client-btn">Add New Client</button>
+
+<div id="assign-modal" class="modal">
+  <div class="modal-content assignment-modal">
+    <h2>Assign Products</h2>
+
+    <div class="form-group">
+      <label for="supplier-name-input">Supplier Name</label> 
+      <div class="search-container"> 
+        <input type="text" id="supplier-name-input" class="search-input" placeholder="Type supplier name..." autocomplete="off"> 
+        <div id="supplier-suggestions" class="suggestions-dropdown"></div>
+      </div>
+      <div class="validation-message" id="supplier-validation"></div>
+    </div>
+
+    <div class="product-section">
+      <div class="form-group">
+        <label for="product-name-input">Product Name</label>
+        <div class="search-container">
+          <input type="text" 
+                 id="product-name-input" 
+                 class="search-input" 
+                 placeholder="Type product name..." 
+                 autocomplete="off">
+          <div id="product-suggestions" class="suggestions-dropdown"></div>
+        </div>
+      </div>
+
+      <div class="form-group quantity-group">
+        <label for="product-quantity">Quantity</label>
+        <input type="number" 
+               id="product-quantity" 
+               class="quantity-input" 
+               min="1" 
+               placeholder="Enter quantity">
+      </div>
+
+      <button id="add-product-btn" class="secondary-btn">
+        Add Product
+      </button>
+    </div>
+
+    <div class="selected-products-container">
+      <h3>Selected Products</h3>
+      <div id="selected-products" class="selected-products-list"></div>
+    </div>
+
+    <div id="assignment-error" class="error-message"></div>
+    <div id="assignment-success" class="success-message"></div>
+
+    <div class="modal-actions">
+      <button onclick="saveAssignment()" class="primary-btn">Save Assignment</button>
+      <button onclick="closeModal('assign-modal')" class="secondary-btn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="add-client-modal" class="modal">
+  <div class="modal-content">
+    <h2>{% if editMode %}Edit Client{% else %}Add New Client{% endif %}</h2>
+    <input type="text" id="client-name" placeholder="Client Name">
+    <input type="text" id="client-address" placeholder="Client Address">
+    <button onclick="saveClient()">{% if editMode %}Save Changes{% else %}Add Client{% endif %}</button>
+    <button onclick="closeModal('add-client-modal')">Cancel</button>
+    <button onclick="fetchCurrentLocation()" style="background-color: lightblue;">Use Current Location</button>
+  </div>
+</div>
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assign Supplier</title>
+    <style>
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .modal.show {
+            display: block;
+        }
+        select {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0 15px;
+        }
+        button {
+            padding: 8px 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Client information and assign button -->
+        <button id="assignBtn" onclick="fetchData()">Assign</button>
+    </div>
+
+    <!-- Modal for supplier and product assignment -->
+    <div id="assignModal" class="modal">
+        <h2>Select Supplier and Product</h2>
+        <form id="assignmentForm" onsubmit="handleAssignment(event)">
+            <div>
+                <label for="supplier">Supplier:</label>
+                <select id="supplier" required>
+                    <option value="">Select a supplier</option>
+                </select>
+            </div>
+            
+            <div>
+                <label for="product">Product:</label>
+                <select id="product" required>
+                    <option value="">Select a product</option>
+                </select>
+            </div>
+
+            <div class="button-group">
+                <button type="submit">Confirm Assignment</button>
+                <button type="button" onclick="closeModal()">Cancel</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // Function to show modal
+        function showModal() {
+            document.getElementById('assignModal').classList.add('show');
+        }
+
+        // Function to close modal
+        function closeModal() {
+            document.getElementById('assignModal').classList.remove('show');
+        }
+
+        // Fetch supplier and product data
+        async function fetchData() {
+            try {
+                showModal();
+                
+                // Fetch suppliers and products in parallel
+                const [suppliersResponse, productsResponse] = await Promise.all([
+                    fetch('/api/suppliers'),
+                    fetch('/api/products')
+                ]);
+
+                if (!suppliersResponse.ok || !productsResponse.ok) {
+                    throw new Error('Failed to fetch data');
+                }
+
+                const suppliers = await suppliersResponse.json();
+                const products = await productsResponse.json();
+
+                // Populate supplier dropdown
+                const supplierSelect = document.getElementById('supplier');
+                supplierSelect.innerHTML = '<option value="">Select a supplier</option>';
+                suppliers.forEach(supplier => {
+                    const option = document.createElement('option');
+                    option.value = supplier._id;
+                    option.textContent = supplier.name;
+                    supplierSelect.appendChild(option);
+                });
+
+                // Populate product dropdown
+                const productSelect = document.getElementById('product');
+                productSelect.innerHTML = '<option value="">Select a product</option>';
+                products.forEach(product => {
+                    const option = document.createElement('option');
+                    option.value = product._id;
+                    option.textContent = product.name;
+                    productSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                alert('Failed to load suppliers and products. Please try again.');
+                closeModal();
+            }
+        }
+
+        
+        // Handle form submission
+async function handleAssignment(event) {
+    event.preventDefault();
+    
+    const supplierId = document.getElementById('supplier').value;
+    const productId = document.getElementById('product').value;
+
+    // Retrieve client ID from a data attribute or global variable
+    const clientId = document.getElementById('assignmentForm').dataset.clientId;
+
+    if (!supplierId || !productId || !clientId) {
+        alert('Please select a supplier, product, and ensure the client is valid.');
+        return;
+    }
+
+    try {
+        const response = await fetch('/assign_client', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                supplier_id: supplierId,
+                product_id: productId,
+                client_id: clientId // Include client ID
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            alert('Assignment successful!');
+            closeModal();
+            location.reload(); // Optionally refresh the page or update the UI
+        } else {
+            alert(result.message || 'Failed to assign. Please try again.');
+        }
+    } catch (error) {
+        console.error('Error during assignment:', error);
+        alert('An error occurred during assignment. Please try again.');
+    }
+}
+
+
+
+        
+    </script>
+</body>
+</html>
